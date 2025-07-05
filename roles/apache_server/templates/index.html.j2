@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>System Info</title>
+</head>
+<body>
+    <h1>Характеристики хоста {{ ansible_hostname }}</h1>
+    <ul>
+        <li><strong>CPU:</strong> {{ ansible_processor_count if ansible_processor else 'N/A' }}</li>
+        <li><strong>RAM:</strong> {{ (ansible_memtotal_mb | default(0)) }} MB</li>
+        <li><strong>Первый HDD (примерный размер):</strong> {{ first_hdd_size_gb }} GB</li>
+        <li><strong>IP-адрес:</strong> {{ ansible_default_ipv4.address }}</li>
+    </ul>
+</body>
+</html>

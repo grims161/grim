@@ -1,0 +1,90 @@
+---
+- name: Install Apache web server
+  ansible.builtin.yum:
+    name: httpd
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Install Apache web server
+  ansible.builtin.apt:
+    name: apache2
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Gather disk facts
+  ansible.builtin.setup:
+    gather_subset:
+      - hardware
+      - network
+      - virtual
+      - devices
+  # Это нужно для получения информации о дисках
+
+- name: Determine first HDD size in GB
+  set_fact:
+    - name: Determine first HDD size in GB
+  set_fact:
+    first_hdd_size_gb: >-
+      {{
+        (ansible_devices
+          | dict2items
+          | selectattr('key', 'match', '^(sd|hd|vd|xvd|nvme)')
+          | sort(attribute='key')
+          | first).value.size | default('0G')
+        | regex_replace('G','')
+        | float
+      }}
+
+  # Обрабатываем ansible_devices, чтобы найти первый диск и взять его размер
+
+- name: Create custom index.html with system info
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: "{{ apache_docroot }}/index.html"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Apache
+
+- name: Open port 80 in firewall (firewalld) on RedHat family
+  ansible.builtin.firewalld:
+    service: http
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: ansible_os_family == "RedHat"
+  become: true
+
+- name: Open port 80 in UFW on Debian family
+  ansible.builtin.ufw:
+    rule: allow
+    port: 80
+    proto: tcp
+  when: ansible_os_family == "Debian"
+  become: true
+
+- name: Ensure Apache service is started and enabled (RedHat)
+  ansible.builtin.systemd:
+    name: httpd
+    state: started
+    enabled: yes
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure Apache service is started and enabled (Debian)
+  ansible.builtin.systemd:
+    name: apache2
+    state: started
+    enabled: yes
+  when: ansible_os_family == "Debian"
+
+- name: Check HTTP response code from localhost
+  ansible.builtin.uri:
+    url: "http://localhost"
+    status_code: 200
+  register: result
+
+- name: Fail if HTTP response is not 200
+  ansible.builtin.fail:
+    msg: "Apache web server is not responding with 200 OK"
+  when: result.status != 200
