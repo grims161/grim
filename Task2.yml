@@ -1,0 +1,18 @@
+---
+- name: Изменить приветствие системы (motd) с IP и hostname
+  hosts: all
+  become: true
+  vars:
+    custom_motd: |
+      Welcome to server {{ ansible_hostname }}!
+      Your IP: {{ ansible_default_ipv4.address }}
+      Have a nice day, system administrator!
+
+  tasks:
+    - name: Записать новое приветствие в /etc/motd
+      ansible.builtin.copy:
+        dest: /etc/motd
+        content: "{{ custom_motd }}"
+        owner: root
+        group: root
+        mode: '0644'

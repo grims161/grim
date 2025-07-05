@@ -1,0 +1,16 @@
+---
+- name: Изменить приветствие системы (motd)
+  hosts: all
+  become: true
+  vars:
+    custom_motd: |
+      Netology. Ansible 2
+
+  tasks:
+    - name: Записать новое приветствие в /etc/motd
+      ansible.builtin.copy:
+        dest: /etc/motd
+        content: "{{ custom_motd }}"
+        owner: root
+        group: root
+        mode: '0644'
